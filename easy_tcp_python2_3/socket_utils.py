@@ -35,10 +35,10 @@ def recvall_pickle(sock):
     length = struct.unpack("L", packed_length)[0]
     string_data = recvall(sock, int(length))
     try:
-        # send python3 -> receive python 2
+        # python 3 -> 2
         data = pickle.loads(string_data)
     except TypeError:
-        # send python2 -> receive python 3
+        # python 2 -> 3
         data = pickle.loads(string_data, encoding="bytes")
     pickle_compat.unpatch()
     return data
@@ -55,10 +55,14 @@ def recvall_image(sock):
     return cv2.imdecode(data, 1)
 
 def sendall_image(sock, image):
-    # !TODO fix the error: send from python 2 to python 3 does not work
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
     result, imgencode = cv2.imencode('.jpg', image, encode_param)
     data = np.array(imgencode)
     string_data = data.tostring()
-    sock.send(str(len(string_data)).ljust(16))
+    try:
+        # python 3 -> 2
+        sock.send(str(len(string_data)).ljust(16))
+    except TypeError:
+        # python 2 -> 3
+        sock.send(str(len(string_data)).ljust(16).encode())
     sock.send(string_data)
